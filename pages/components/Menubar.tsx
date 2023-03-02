@@ -17,14 +17,14 @@ const Menubar = ({navigation}: {navigation: NavigationProp<any>}) => {
     <TouchableOpacity
       className="absolute bottom-0 left-0 z-50 h-12 w-full flex-row justify-between bg-gray-600 p-2 align-middle"
       style={styles.container}>
-      <Pressable
+      <Button
+        title="Home"
         onPress={() => {
           navigation.navigate('Home');
-        }}>
-        <Text className="font-bold text-white">Home</Text>
-      </Pressable>
+        }}
+      />
       <Button title="Cart" onPress={() => navigation.navigate('Cart')} />
-      <Button title="Profile" />
+      <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
     </TouchableOpacity>
   );
 };

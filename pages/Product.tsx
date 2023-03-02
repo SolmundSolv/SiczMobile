@@ -35,6 +35,7 @@ function ProductPage({
   const [isLoading, setLoading] = useState(true);
   const [data, setData] = useState<Product | null>(null);
   const product = route?.params?.product;
+  const [cart, setCart] = useState<string | null>(null);
   function getDetails() {
     fetch(`http://192.168.1.211:3001/model/${product.id}`, {
       method: 'GET',
@@ -47,6 +48,26 @@ function ProductPage({
       .then(json => setData(json))
       .catch(error => console.error(error))
       .finally(() => setLoading(false));
+    AsyncStorage.getItem('cart').then(value => {
+      setCart(value);
+      console.log(cart);
+      if (!value) {
+        fetch(`http://192.168.1.211:3001/cart`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        })
+          .then(response => response.json())
+          .then(json => {
+            console.log(json);
+            AsyncStorage.setItem('cart', json.id);
+            console.log(json.id);
+            setCart(json.id);
+          });
+      }
+    });
   }
   useEffect(() => {
     getDetails();
@@ -72,40 +93,16 @@ function ProductPage({
                 <Button
                   title="Add to Carts"
                   onPress={async () => {
-                    const cart = await AsyncStorage.getItem('cart');
-                    if (!cart) {
-                      fetch(`http://192.168.1.211:3001/cart`, {
-                        method: 'POST',
-                        headers: {
-                          Accept: 'application/json',
-                          'Content-Type': 'application/json',
-                        },
-                      })
-                        .then(response => {
-                          if (response.ok) {
-                            return response.json();
-                          } else {
-                            console.log(response);
-                            throw response;
-                          }
-                        })
-                        .then(json => AsyncStorage.setItem('cart', json.id));
-                    }
-                    fetch(
-                      `http://192.168.1.211:3001/cart/${await AsyncStorage.getItem(
-                        'cart',
-                      )}`,
-                      {
-                        method: 'POST',
-                        headers: {
-                          Accept: 'application/json',
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          productId: data?.id,
-                        }),
+                    fetch(`http://192.168.1.211:3001/cart/${cart}`, {
+                      method: 'POST',
+                      headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
                       },
-                    )
+                      body: JSON.stringify({
+                        productId: data?.id,
+                      }),
+                    })
                       .then(response => {
                         if (response.ok) {
                           ToastAndroid.show(

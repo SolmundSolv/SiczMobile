@@ -33,9 +33,6 @@ function Home({navigation}: {navigation: NavigationProp<any>}) {
   return (
     <View>
       <ScrollView className="gap-2 bg-gray-500 p-2 pb-12">
-        <View className="border border-gray-400 bg-gray-500">
-          <TextInput placeholder="Search" />
-        </View>
         <ScrollView className="flex flex-col bg-gray-600 pb-16">
           {isLoading ? (
             <View className="h-screen">

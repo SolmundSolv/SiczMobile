@@ -10,6 +10,7 @@ import {
   TextInput,
   ToastAndroid,
 } from 'react-native';
+import {User} from './Profile';
 
 type Cart = {
   id: string;
@@ -25,6 +26,7 @@ type Cart = {
 };
 
 const Checkout = ({navigation}: {navigation: NavigationProp<any>}) => {
+  const [user, setUser] = useState<User | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -36,6 +38,30 @@ const Checkout = ({navigation}: {navigation: NavigationProp<any>}) => {
   const [data, setData] = React.useState<Cart | null>(null);
   const [days, setDays] = React.useState(1);
   const [cart, setCart] = React.useState('');
+  const [isLoading, setLoading] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(true);
+  const getUser = async () => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      setLoggedIn(false);
+      return;
+    }
+    setLoggedIn(true);
+    fetch('http://192.168.1.211:3001/user/me', {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(response => response.json())
+      .then(json => {
+        setUser(json);
+      })
+      .catch(error => console.error(error))
+      .finally(() => setLoading(false));
+  };
 
   const getDays = async () => {
     const days = await AsyncStorage.getItem('days');
@@ -83,16 +109,23 @@ const Checkout = ({navigation}: {navigation: NavigationProp<any>}) => {
     }
   };
   useEffect(() => {
+    getUser();
     getCart();
     getDays();
   }, []);
+  if (isLoading) {
+    return (
+      <View>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView className="bg-gray-500">
       <View className="p-4">
         <TextInput
           placeholder="Name"
-          value={name}
           onChangeText={setName}
           className="mb-4 w-full rounded-md border-2 border-gray-300 px-3 py-2 text-base"
         />
@@ -139,11 +172,8 @@ const Checkout = ({navigation}: {navigation: NavigationProp<any>}) => {
           className="mb-4 w-full rounded-md border-2 border-gray-300 px-3 py-2 text-base"
         />
         <Button
-          title="Submit"
+          title="Pay"
           onPress={() => {
-            console.log(data?.CartItem.map(i => i?.product.id));
-            console.log(days);
-            console.log(cart);
             fetch('http://192.168.1.211:3001/order', {
               method: 'POST',
               headers: {
@@ -151,11 +181,12 @@ const Checkout = ({navigation}: {navigation: NavigationProp<any>}) => {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                customer: '',
+                customer: user?.user?.id || '',
                 email: email,
                 name: name,
                 phone: phone,
                 status: 'cl9sfz1xz0003tk2se0jt74m6',
+
                 price: data
                   ? data?.CartItem.reduce(
                       (acc, i) => acc + i?.product.price,
@@ -177,7 +208,12 @@ const Checkout = ({navigation}: {navigation: NavigationProp<any>}) => {
                 if (response.ok) {
                   return response.json();
                 } else {
-                  if (response.status === 404) {
+                  if (response.status === 400) {
+                    ToastAndroid.show(
+                      'Please fill all fields',
+                      ToastAndroid.TOP,
+                    );
+                  } else if (response.status === 404) {
                     ToastAndroid.show(
                       'Some products are not avaliable',
                       ToastAndroid.TOP,
@@ -208,7 +244,7 @@ const Checkout = ({navigation}: {navigation: NavigationProp<any>}) => {
                     },
                   }),
                 });
-                navigation.navigate('Home');
+                navigation.navigate('Payment');
               });
           }}
         />
